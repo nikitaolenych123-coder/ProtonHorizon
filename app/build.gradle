@@ -9,6 +9,10 @@ android {
     namespace "com.protonhorizon.emulator"
     compileSdk 34
     
+    buildFeatures {
+        buildConfig true
+    }
+    
     defaultConfig {
         applicationId "com.protonhorizon.emulator"
         minSdk 24
@@ -37,12 +41,7 @@ android {
             v1SigningEnabled true
             v2SigningEnabled true
         }
-        debug {
-            storeFile file(System.getenv('DEBUG_KEYSTORE_PATH') ?: '')
-            storePassword System.getenv('DEBUG_KEYSTORE_PASSWORD') ?: ''
-            keyAlias System.getenv('DEBUG_KEY_ALIAS') ?: ''
-            keyPassword System.getenv('DEBUG_KEY_PASSWORD') ?: ''
-        }
+
     }
     
     buildTypes {

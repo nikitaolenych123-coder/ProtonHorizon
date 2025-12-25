@@ -3,7 +3,7 @@
 set -e
 
 GRADLE_VERSION=8.1
-GRADLE_SHA=9ba1f23354ce770e8872e0bf6e9ca7e4cacf0a8a97fc0c0e9925d9f90522d521
+GRADLE_SHA=a62c5f99585dd9e1f95dab7b9415a0e698fa9dd1e6c38537faa81ac078f4d23e
 
 echo "Downloading Gradle $GRADLE_VERSION..."
 curl -L "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip" -o gradle.zip
