@@ -53,12 +53,12 @@ jobs:
 
       - name: Build Release APK
         run: |
-          ./gradlew assembleRelease --no-daemon
+          ./gradlew assembleDebug --no-daemon
 
       - name: Prepare release assets
         run: |
           mkdir -p release_artifacts
-          cp app/build/outputs/apk/release/*.apk release_artifacts/ || true
+          cp app/build/outputs/apk/debug/*.apk release_artifacts/ || true
           # Download apktool for inclusion in release
           APKTOOL_VERSION=v2.7.0
           curl -L "https://github.com/iBotPeaches/Apktool/releases/download/${APKTOOL_VERSION}/apktool_${APKTOOL_VERSION}.jar" -o release_artifacts/apktool.jar || true
