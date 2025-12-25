@@ -11,7 +11,7 @@ curl -L "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.
 echo "Verifying Gradle checksum..."
 echo "$GRADLE_SHA  gradle.zip" | sha256sum -c -
 
-unzip -q gradle.zip
+unzip -q -o gradle.zip
 rm gradle.zip
 
 echo "Gradle installation complete!"
