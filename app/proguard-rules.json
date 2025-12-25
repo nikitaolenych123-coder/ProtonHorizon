@@ -1,0 +1,16 @@
+{
+  "formatVersion": "1.1",
+  "proGuard": [
+    {
+      "inputs": [
+        "app/build/intermediates/asm_instrumented_jar/release/classes.jar"
+      ],
+      "outputs": [
+        "app/build/intermediates/proguard_jar/release/classes.jar"
+      ],
+      "config": [
+        "app/proguard-rules.pro"
+      ]
+    }
+  ]
+}

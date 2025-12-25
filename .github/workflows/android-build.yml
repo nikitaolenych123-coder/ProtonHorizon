@@ -1,0 +1,106 @@
+name: Android CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper/
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v2
+        with:
+          api-level: 34
+          build-tools: 34.0.0
+          ndk: 25.2.9519653
+
+      - name: Restore Gradle wrapper permissions
+        run: chmod +x ./gradlew
+
+      - name: Decode keystore (from secret)
+        if: ${{ secrets.SIGNING_KEY_BASE64 != '' }}
+        run: echo "${{ secrets.SIGNING_KEY_BASE64 }}" | base64 --decode > keystore.jks
+
+      - name: Export signing env
+        run: |
+          echo "SIGNING_KEY_PATH=$(pwd)/keystore.jks" >> $GITHUB_ENV
+          echo "SIGNING_KEY_STORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
+          echo "SIGNING_KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> $GITHUB_ENV
+          echo "SIGNING_KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> $GITHUB_ENV
+
+      - name: Build Release APK
+        run: |
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release_artifacts
+          cp app/build/outputs/apk/release/*.apk release_artifacts/ || true
+          # Download apktool for inclusion in release
+          APKTOOL_VERSION=v2.7.0
+          curl -L "https://github.com/iBotPeaches/Apktool/releases/download/${APKTOOL_VERSION}/apktool_${APKTOOL_VERSION}.jar" -o release_artifacts/apktool.jar || true
+          curl -L "https://raw.githubusercontent.com/iBotPeaches/Apktool/master/scripts/linux/apktool" -o release_artifacts/apktool || true
+          chmod +x release_artifacts/apktool || true
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ProtonHorizon-release
+          path: release_artifacts/
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.run_number }}
+          release_name: ProtonHorizon v${{ github.run_number }}
+          body: "Automated release from CI run ${{ github.run_number }}"
+          draft: false
+          prerelease: false
+
+      - name: Upload APK to GitHub Release
+        if: steps.create_release.outputs.upload_url != ''
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: release_artifacts/$(ls release_artifacts | grep ".apk" | head -n1)
+          asset_name: ProtonHorizon.apk
+          asset_content_type: application/vnd.android.package-archive
+
+      - name: Upload apktool.jar to GitHub Release
+        if: steps.create_release.outputs.upload_url != ''
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: release_artifacts/apktool.jar
+          asset_name: apktool.jar
+          asset_content_type: application/java-archive
