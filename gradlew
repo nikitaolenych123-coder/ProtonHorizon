@@ -15,3 +15,12 @@ unzip -q -o gradle.zip
 rm gradle.zip
 
 echo "Gradle installation complete!"
+
+# Execute the downloaded Gradle with any provided arguments
+GRADLE_BIN="$PWD/gradle-${GRADLE_VERSION}/bin/gradle"
+if [ -x "$GRADLE_BIN" ]; then
+	exec "$GRADLE_BIN" "$@"
+else
+	echo "Error: gradle executable not found at $GRADLE_BIN" >&2
+	exit 1
+fi
