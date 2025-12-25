@@ -3,8 +3,6 @@ plugins {
     id 'kotlin-android'
 }
 
-apply from: 'signing.gradle'
-
 android {
     namespace "com.protonhorizon.emulator"
     compileSdk 34
