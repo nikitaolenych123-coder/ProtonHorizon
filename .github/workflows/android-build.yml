@@ -72,36 +72,48 @@ jobs:
           name: ProtonHorizon-release
           path: release_artifacts/
 
-      - name: Create GitHub Release
+      - name: Create or get GitHub Release
         id: create_release
-        uses: actions/create-release@v1
+        run: |
+          RELEASE_TAG="v${{ github.run_number }}"
+          RELEASE_NAME="ProtonHorizon v${{ github.run_number }}"
+          RELEASE_BODY="Automated release from CI run ${{ github.run_number }}"
+          
+          # Try to get existing release
+          RELEASE=$(gh release view "${RELEASE_TAG}" 2>/dev/null || true)
+          if [ -z "$RELEASE" ]; then
+            # Create new release
+            gh release create "${RELEASE_TAG}" \
+              --title "${RELEASE_NAME}" \
+              --notes "${RELEASE_BODY}" \
+              --repo ${{ github.repository }}
+            echo "upload_url=https://uploads.github.com/repos/${{ github.repository }}/releases/upload/${RELEASE_TAG}" >> $GITHUB_OUTPUT
+          else
+            # Get upload URL for existing release
+            echo "upload_url=https://uploads.github.com/repos/${{ github.repository }}/releases/upload/${RELEASE_TAG}" >> $GITHUB_OUTPUT
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ github.run_number }}
-          release_name: ProtonHorizon v${{ github.run_number }}
-          body: "Automated release from CI run ${{ github.run_number }}"
-          draft: false
-          prerelease: false
 
       - name: Upload APK to GitHub Release
-        if: steps.create_release.outputs.upload_url != ''
-        uses: actions/upload-release-asset@v1
+        run: |
+          RELEASE_TAG="v${{ github.run_number }}"
+          APK_FILE=$(ls release_artifacts/*.apk 2>/dev/null | head -n1)
+          if [ -n "$APK_FILE" ]; then
+            gh release upload "${RELEASE_TAG}" "$APK_FILE" \
+              --clobber \
+              --repo ${{ github.repository }}
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: release_artifacts/$(ls release_artifacts | grep ".apk" | head -n1)
-          asset_name: ProtonHorizon.apk
-          asset_content_type: application/vnd.android.package-archive
 
-      - name: Upload apktool.jar to GitHub Release
-        if: steps.create_release.outputs.upload_url != ''
-        uses: actions/upload-release-asset@v1
+      - name: Upload apktool to GitHub Release
+        run: |
+          RELEASE_TAG="v${{ github.run_number }}"
+          if [ -f "release_artifacts/apktool.jar" ]; then
+            gh release upload "${RELEASE_TAG}" "release_artifacts/apktool.jar" \
+              --clobber \
+              --repo ${{ github.repository }}
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: release_artifacts/apktool.jar
-          asset_name: apktool.jar
-          asset_content_type: application/java-archive
