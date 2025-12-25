@@ -50,7 +50,7 @@ jobs:
           -Pandroid.injected.signing.key.password="${{ secrets.SIGNING_KEY_PASSWORD }}"
     
     - name: Upload signed APK
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: signed-release-aab
         path: app/build/outputs/bundle/release/app-release.aab
