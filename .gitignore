@@ -51,3 +51,5 @@ signing.gradle
 app/build/outputs/
 build/
 .gradle/
+# Ignore generated Android main resource duplicates
+/app/src/main/res/mipmap/

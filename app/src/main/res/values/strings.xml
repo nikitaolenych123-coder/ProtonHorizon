@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ProtonHorizon</string>
+    <string name="app_version">1.0.0</string>
+    
+    <!-- Main Activity -->
+    <string name="btn_start">Запустити</string>
+    <string name="btn_stop">Зупинити</string>
+    <string name="btn_settings">Налаштування</string>
+    <string name="btn_components">Компоненти</string>
+    
+    <!-- Game Selection -->
+    <string name="select_game">Вибрати гру</string>
+    <string name="loading_game">Завантаження гри...</string>
+    <string name="game_loaded">Гра завантажена</string>
+    
+    <!-- Gamepad -->
+    <string name="gamepad_connected">Геймпад підключено</string>
+    <string name="gamepad_disconnected">Геймпад відключено</string>
+    <string name="gamepad_settings">Налаштування геймпада</string>
+    
+    <!-- Graphics -->
+    <string name="graphics_api">Графічний API</string>
+    <string name="vulkan">Vulkan</string>
+    <string name="dxvk">DXVK</string>
+    <string name="vk3d">VK3D</string>
+    <string name="opengl">OpenGL</string>
+    
+    <!-- Components -->
+    <string name="download_proton">Завантажити Proton</string>
+    <string name="download_dxvk">Завантажити DXVK</string>
+    <string name="download_vk3d">Завантажити VK3D</string>
+    <string name="downloading">Завантаження %1$d%%</string>
+    <string name="installed">Встановлено</string>
+    
+    <!-- Errors -->
+    <string name="error_emulator_init">Помилка при ініціалізації емулятора</string>
+    <string name="error_load_game">Помилка при завантаженні гри</string>
+    <string name="error_network">Помилка мережі</string>
+</resources>
