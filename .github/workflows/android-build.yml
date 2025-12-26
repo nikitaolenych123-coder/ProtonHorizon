@@ -33,27 +33,33 @@ jobs:
 
       - name: Install Android SDK & NDK
         env:
-          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+          ANDROID_SDK_ROOT: ${{ github.workspace }}/android-sdk
         run: |
-          set -e
-          mkdir -p $ANDROID_SDK_ROOT/cmdline-tools
+          set -euo pipefail
+          mkdir -p "$ANDROID_SDK_ROOT/cmdline-tools"
           cd /tmp
+          echo "Downloading Android commandline tools..."
           curl -fsSL -o commandlinetools.zip https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
-          unzip -q -o commandlinetools.zip -d $ANDROID_SDK_ROOT/cmdline-tools
-          rm commandlinetools.zip
+          unzip -q -o commandlinetools.zip -d "$ANDROID_SDK_ROOT/cmdline-tools"
+          rm -f commandlinetools.zip
           # Ensure a 'latest' path for sdkmanager
           if [ -d "$ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools" ]; then
             mv -f "$ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools" "$ANDROID_SDK_ROOT/cmdline-tools/latest" || true
           fi
           export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH"
-          # Accept licenses non-interactively (retry a few times to avoid broken-pipe)
-          for i in 1 2 3; do
-            yes | sdkmanager --sdk_root=$ANDROID_SDK_ROOT --licenses && break || sleep 1
+          echo "sdkmanager path: $(which sdkmanager)"
+          # Retry license acceptance to avoid transient failures
+          for i in {1..5}; do
+            yes | sdkmanager --sdk_root="$ANDROID_SDK_ROOT" --licenses && break || sleep 2
           done
-          # Install only required packages
-          sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;25.2.9519653"
+          # Install required packages for compileSdk 33 and additional useful tools
+          sdkmanager --sdk_root="$ANDROID_SDK_ROOT" "platform-tools" \
+            "platforms;android-33" "platforms;android-34" \
+            "build-tools;33.0.1" "build-tools;34.0.0" \
+            "ndk;25.2.9519653" || true
           echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
           echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+          echo "PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH" >> $GITHUB_ENV
 
       - name: Restore Gradle wrapper permissions
         run: chmod +x ./gradlew
