@@ -71,7 +71,7 @@ jobs:
 
       - name: Build Debug APK
         run: |
-          ./gradlew assembleDebug --no-daemon -x compileDebugNdk 2>&1 | tee build.log
+          ./gradlew assembleDebug --no-daemon -x compileDebugNdk --stacktrace --info 2>&1 | tee build.log
           
       - name: Show APK outputs
         run: |
@@ -87,13 +87,8 @@ jobs:
       - name: Prepare release assets
         run: |
           mkdir -p release_artifacts
-          # Copy APKs from all possible locations
-          if [ -d "app/build/outputs/apk/debug" ]; then
-            cp app/build/outputs/apk/debug/*.apk release_artifacts/ 2>/dev/null || echo "No APKs in debug folder"
-          fi
-          if [ -d "app/build/outputs/apk/release" ]; then
-            cp app/build/outputs/apk/release/*.apk release_artifacts/ 2>/dev/null || echo "No APKs in release folder"
-          fi
+          # Find and copy any APKs produced by the build into release_artifacts
+          find app/build -type f -name '*.apk' -exec cp {} release_artifacts/ \; || echo "No APKs found to copy"
           # Download apktool for inclusion in release
           echo "Downloading apktool..."
           APKTOOL_VERSION=v2.7.0
@@ -132,18 +127,23 @@ jobs:
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload APK to GitHub Release
         run: |
           RELEASE_TAG="v${{ github.run_number }}"
-          APK_FILE=$(ls release_artifacts/*.apk 2>/dev/null | head -n1)
-          if [ -n "$APK_FILE" ]; then
-            gh release upload "${RELEASE_TAG}" "$APK_FILE" \
-              --clobber \
-              --repo ${{ github.repository }}
+          APK_FILES=$(ls release_artifacts/*.apk 2>/dev/null || true)
+          if [ -n "$APK_FILES" ]; then
+            for f in release_artifacts/*.apk; do
+              echo "Uploading $f"
+              gh release upload "${RELEASE_TAG}" "$f" --clobber --repo ${{ github.repository }} || echo "Failed to upload $f"
+            done
+          else
+            echo "No APK files to upload"
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload apktool to GitHub Release
         run: |
@@ -155,3 +155,4 @@ jobs:
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
