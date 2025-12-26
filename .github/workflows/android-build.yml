@@ -35,7 +35,7 @@ jobs:
         env:
           ANDROID_SDK_ROOT: ${{ github.workspace }}/android-sdk
         run: |
-          set -euo pipefail
+          set -e
           mkdir -p "$ANDROID_SDK_ROOT/cmdline-tools"
           cd /tmp
           echo "Downloading Android commandline tools..."
@@ -50,19 +50,38 @@ jobs:
           echo "sdkmanager path: $(which sdkmanager)"
           # Retry license acceptance to avoid transient failures
           for i in {1..5}; do
-            yes | sdkmanager --sdk_root="$ANDROID_SDK_ROOT" --licenses && break || sleep 2
+            yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_SDK_ROOT" --licenses && break || sleep 2
           done
           # Install required packages for compileSdk 33 and additional useful tools
-          sdkmanager --sdk_root="$ANDROID_SDK_ROOT" "platform-tools" \
-            "platforms;android-33" "platforms;android-34" \
-            "build-tools;33.0.1" "build-tools;34.0.0" \
-            "ndk;25.2.9519653" || true
+          for i in 1 2 3; do
+            "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_SDK_ROOT" "platform-tools" "platforms;android-33" "build-tools;33.0.1" "ndk;25.2.9519653" && break || sleep 5
+          done
           echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
           echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
           echo "PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH" >> $GITHUB_ENV
+          # Debug: list licenses and installed packages
+          mkdir -p $ANDROID_SDK_ROOT/licenses
+          echo "=== Licenses dir ==="
+          ls -la $ANDROID_SDK_ROOT/licenses || true
+          echo "=== SDK packages ==="
+          "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root=$ANDROID_SDK_ROOT --list || true
 
       - name: Restore Gradle wrapper permissions
         run: chmod +x ./gradlew
+
+      - name: Debug environment
+        run: |
+          echo "=== Java version ==="
+          java -version
+          echo ""
+          echo "=== Gradle version ==="
+          ./gradlew --version
+          echo ""
+          echo "=== Android SDK ==="
+          ls -la $ANDROID_SDK_ROOT/ || echo "ANDROID_SDK_ROOT not set"
+          echo ""
+          echo "=== Build environment ==="
+          env | grep -i "ANDROID\|JAVA\|PATH\|GRADLE" || true
 
       - name: Decode keystore (from secret)
         if: ${{ secrets.SIGNING_KEY_BASE64 != '' }}
@@ -110,6 +129,16 @@ jobs:
         with:
           name: ProtonHorizon-release
           path: release_artifacts/
+
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: |
+            build.log
+            app/build/outputs/
+          retention-days: 1
 
       - name: Create or get GitHub Release
         id: create_release
