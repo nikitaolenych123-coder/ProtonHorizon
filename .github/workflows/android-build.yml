@@ -46,7 +46,11 @@ jobs:
             mv -f "$ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools" "$ANDROID_SDK_ROOT/cmdline-tools/latest" || true
           fi
           export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH"
-          yes | sdkmanager --sdk_root=$ANDROID_SDK_ROOT --licenses || true
+          # Accept licenses non-interactively (retry a few times to avoid broken-pipe)
+          for i in 1 2 3; do
+            yes | sdkmanager --sdk_root=$ANDROID_SDK_ROOT --licenses && break || sleep 1
+          done
+          # Install only required packages
           sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;25.2.9519653"
           echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
           echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
